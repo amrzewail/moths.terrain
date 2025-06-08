@@ -16,7 +16,7 @@ namespace Moths.Terrain.Blending
         private Terrain _terrain;
 
         public Terrain Terrain => _terrain ? _terrain : _terrain = GetComponent<Terrain>();
-
+        
         private void Awake()
         {
             if (_sampler == null) _sampler = new TerrainTextureSampler();

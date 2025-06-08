@@ -11,10 +11,9 @@ namespace Moths.Terrain.Blending
     public class TerrainBlendable : MonoBehaviour
     {
         [SerializeField] Renderer _renderer;
-        [SerializeField, Range(0f, 6f)] float _blendRange = 1;
 
         private Terrain _terrain;
-        private MaterialPropertyBlock _propertyBlock;
+        private static MaterialPropertyBlock _propertyBlock;
 
         private void Reset()
         {
@@ -78,7 +77,7 @@ namespace Moths.Terrain.Blending
 
             _propertyBlock.SetVector("_terrainSize", sampler.terrainSize);
             _propertyBlock.SetVector("_terrainPositionWS", _terrain.transform.position);
-            _propertyBlock.SetFloat("_blendRange", _blendRange);
+            _propertyBlock.SetFloat("_blendRange", 2);
 
             _renderer.SetPropertyBlock(_propertyBlock);
         }
