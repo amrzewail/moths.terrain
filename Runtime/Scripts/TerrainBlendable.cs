@@ -13,7 +13,8 @@ namespace Moths.Terrain.Blending
         [SerializeField] Renderer _renderer;
 
         private Terrain _terrain;
-        private static MaterialPropertyBlock _propertyBlock;
+
+        private MaterialPropertyBlock _propertyBlock;
 
         private void Reset()
         {
@@ -37,7 +38,10 @@ namespace Moths.Terrain.Blending
 
             if (!sampler.control) return;
 
-            if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
+            if (_propertyBlock == null)
+            {
+                _propertyBlock = new MaterialPropertyBlock();
+            }
 
             _propertyBlock.SetTexture("_controlMap", sampler.control);
 
