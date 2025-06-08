@@ -1,0 +1,18 @@
+{
+    "name": "Moths.Terrain.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:4d5c20565603c1747b33d03445284cbc"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
