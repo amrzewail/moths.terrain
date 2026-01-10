@@ -24,7 +24,7 @@ namespace Moths.Terrain.Blending
 
             if (!Application.isPlaying || !_terrain)
             {
-                _terrain = GetClosestCurrentTerrain(transform.position);
+                _terrain = GetClosestCurrentTerrain(_renderer.bounds.center);
             }
 
             if (!_terrain) return;
