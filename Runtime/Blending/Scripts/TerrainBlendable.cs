@@ -1,9 +1,5 @@
-using UnityEngine;
-
 namespace Moths.Terrain.Blending
 {
-    using System;
-    using System.IO;
     using UnityEngine;
 
 
@@ -89,35 +85,37 @@ namespace Moths.Terrain.Blending
 
         Terrain GetClosestCurrentTerrain(Vector3 position)
         {
-            //Get all terrain
             Terrain[] terrains = Terrain.activeTerrains;
 
-            //Make sure that terrains length is ok
-            if (terrains.Length == 0)
+            if (terrains == null || terrains.Length == 0)
                 return null;
 
-            //If just one, return that one terrain
-            if (terrains.Length == 1)
-                return terrains[0];
+            Terrain closest = terrains[0];
+            float closestSqrDist = float.PositiveInfinity;
 
-            //Get the closest one to the player
-            float lowDist = (terrains[0].GetPosition() - position).sqrMagnitude;
-            var terrainIndex = 0;
-
-            for (int i = 1; i < terrains.Length; i++)
+            foreach (var terrain in terrains)
             {
-                Terrain terrain = terrains[i];
+                // Build terrain bounds
                 Vector3 terrainPos = terrain.GetPosition();
+                Vector3 size = terrain.terrainData.size;
 
-                //Find the distance and check if it is lower than the last one then store it
-                var dist = (terrainPos - position).sqrMagnitude;
-                if (dist < lowDist)
+                Bounds bounds = new Bounds(
+                    terrainPos + size * 0.5f, // center
+                    size                       // size
+                );
+
+                // Closest point on bounds to the position
+                Vector3 closestPoint = bounds.ClosestPoint(position);
+                float sqrDist = (closestPoint - position).sqrMagnitude;
+
+                if (sqrDist < closestSqrDist)
                 {
-                    lowDist = dist;
-                    terrainIndex = i;
+                    closestSqrDist = sqrDist;
+                    closest = terrain;
                 }
             }
-            return terrains[terrainIndex];
+
+            return closest;
         }
     }
 }
