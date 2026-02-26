@@ -117,6 +117,7 @@ namespace Moths.Terrain.Blending.Editor
             {
                 importer2.textureType = UnityEditor.TextureImporterType.Default;
                 importer2.alphaSource = UnityEditor.TextureImporterAlphaSource.FromInput;
+                importer2.wrapMode = TextureWrapMode.Clamp;
                 importer2.isReadable = true;
                 importer2.SaveAndReimport();
             }
