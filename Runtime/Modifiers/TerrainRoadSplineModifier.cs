@@ -180,6 +180,7 @@ namespace Moths.Terrain.Modifiers
 
             public bool AddTrack;
             public int TrackLayer;
+            public float TrackDistance;
             public float TrackWidth;
             public float TrackWeightRandomization;
 
@@ -220,15 +221,27 @@ namespace Moths.Terrain.Modifiers
                     TerrainData.SetAlphamapLayerWeight(alphamapIndex, MidwayLayer, weight);
                 }
 
-                if (AddTrack && distancesq < TrackWidth * TrackWidth)
+                if (AddTrack && TrackWidth > 0f)
                 {
-                    float falloff = 1f - math.saturate(distancesq / (TrackWidth * TrackWidth));
-                    float random01 = 0.5f + 0.5f * rawRandom;
-                    float weightScale = math.lerp(1f - TrackWeightRandomization, 1f, random01);
-                    float weight = falloff * weightScale;
+                    float distance = math.sqrt(distancesq);
+                    float innerEdge = TrackDistance * widthRandom;
+                    float bandWidth = TrackWidth * widthRandom;
+                    float outerEdge = innerEdge + bandWidth;
 
-                    if (TerrainData.AlphamapIndexToLayerIndex(alphamapIndex) == TrackLayer) weight = math.max(TerrainData.Alphamaps[alphamapIndex], weight);
-                    TerrainData.SetAlphamapLayerWeight(alphamapIndex, TrackLayer, weight);
+                    if (distance > innerEdge && distance < outerEdge)
+                    {
+                        float halfWidth = bandWidth * 0.5f;
+                        float center = innerEdge + halfWidth;
+                        float normalizedOffset = math.abs(distance - center) / halfWidth; // 0 at track center, 1 at edges
+                        float falloff = 1f - math.smoothstep(0f, 1f, normalizedOffset);
+
+                        float random01 = 0.5f + 0.5f * rawRandom;
+                        float weightScale = math.lerp(1f - TrackWeightRandomization, 1f, random01);
+                        float weight = falloff * weightScale;
+
+                        if (TerrainData.AlphamapIndexToLayerIndex(alphamapIndex) == TrackLayer) weight = math.max(TerrainData.Alphamaps[alphamapIndex], weight);
+                        TerrainData.SetAlphamapLayerWeight(alphamapIndex, TrackLayer, weight);
+                    }
                 }
             }
         }
@@ -253,7 +266,8 @@ namespace Moths.Terrain.Modifiers
         [Header("Track")]
         [SerializeField] bool _addTrack = false;
         [SerializeField] int _trackLayerIndex = 0;
-        [SerializeField] float _trackWidth = 1f;
+        [SerializeField] float _trackDistance = 0.6f;
+        [SerializeField] float _trackWidth = 0.5f;
         [SerializeField, Range(0f, 1f)] float _trackWeightRandomization = 0.3f;
 
         [Header("Trees")]
@@ -278,6 +292,7 @@ namespace Moths.Terrain.Modifiers
         private int _lastMidwayLayerIndex;
         private bool _lastAddTrack;
         private int _lastTrackLayerIndex;
+        private float _lastTrackDistance;
         private float _lastTrackWidth;
         private float _lastTrackWeightRandomization;
 
@@ -304,6 +319,7 @@ namespace Moths.Terrain.Modifiers
 
             _lastAddTrack = _addTrack;
             _lastTrackLayerIndex = _trackLayerIndex;
+            _lastTrackDistance = _trackDistance;
             _lastTrackWidth = _trackWidth;
             _lastTrackWeightRandomization = _trackWeightRandomization;
 
@@ -391,6 +407,7 @@ namespace Moths.Terrain.Modifiers
 
                 AddTrack = _addTrack,
                 TrackLayer = _trackLayerIndex,
+                TrackDistance = _trackDistance,
                 TrackWidth = _trackWidth,
                 TrackWeightRandomization = _trackWeightRandomization,
             };
@@ -539,6 +556,7 @@ namespace Moths.Terrain.Modifiers
                 _lastMidwayLayerIndex != _midwayLayerIndex ||
                 _lastAddTrack != _addTrack ||
                 _lastTrackLayerIndex != _trackLayerIndex ||
+                _lastTrackDistance != _trackDistance ||
                 _lastTrackWidth != _trackWidth ||
                 _lastTrackWeightRandomization != _trackWeightRandomization ||
                 _lastAddTrees != _addTrees ||
