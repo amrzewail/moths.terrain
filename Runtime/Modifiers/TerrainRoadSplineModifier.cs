@@ -235,7 +235,7 @@ namespace Moths.Terrain.Modifiers
 
         [Header("Trees")]
         [SerializeField] bool _addTrees = false;
-        [SerializeField] int _treePrototypeIndex;
+        [SerializeField] int[] _treePrototypeIndices = new[] { 0 };
         [SerializeField, Range(0.01f, 5)] float _treeSpacing = 0.5f;
         [SerializeField, Range(0, 1)] float _treeSpacingRandomization = 0.2f;
 
@@ -255,7 +255,7 @@ namespace Moths.Terrain.Modifiers
         private int _lastMidwayLayerIndex;
 
         private bool _lastAddTrees;
-        private int _lastTreePrototypeIndex;
+        private int _lastTreePrototypeIndicesHash;
         private float _lastTreeSpacing;
         private float _lastTreeSpacingRandomization;
 
@@ -276,7 +276,7 @@ namespace Moths.Terrain.Modifiers
             _lastMidwayLayerIndex = _midwayLayerIndex;
 
             _lastAddTrees = _addTrees;
-            _lastTreePrototypeIndex = _treePrototypeIndex;
+            _lastTreePrototypeIndicesHash = ComputeIndicesHash(_treePrototypeIndices);
             _lastTreeSpacing = _treeSpacing;
             _lastTreeSpacingRandomization = _treeSpacingRandomization;
 
@@ -377,6 +377,9 @@ namespace Moths.Terrain.Modifiers
 
         private void PlaceTrees(UnmanagedTerrainData data, NativeArray<float3> splinePositions, NativeArray<float3> splineTangents, NativeHashSet<int> splineEnds, NativeList<TreeInstance> treeInstances)
         {
+            if (_treePrototypeIndices == null || _treePrototypeIndices.Length == 0 || data.TreePrototypes <= 0)
+                return;
+
             uint randomState = 12345;
             var random = new Unity.Mathematics.Random(randomState);
 
@@ -397,13 +400,17 @@ namespace Moths.Terrain.Modifiers
                     float t = (nextSpacing - distance) / segmentLength;
                     float3 position = math.lerp(start, end, t);
 
-                    if (position.x >= data.Position.x && position.x <= data.Position.x + data.Size.x && position.y >= data.Position.y && position.y <= data.Position.y + data.Size.y)
+                    // Note: bounds check uses position.z against data.Position.z + data.Size.z
+                    if (position.x >= data.Position.x && position.x <= data.Position.x + data.Size.x &&
+                        position.z >= data.Position.z && position.z <= data.Position.z + data.Size.z)
                     {
                         float scale = random.NextFloat(0.85f, 1.15f);
+                        int rawPrototypeIndex = _treePrototypeIndices[random.NextInt(0, _treePrototypeIndices.Length)];
+                        int prototypeIndex = math.clamp(rawPrototypeIndex, 0, data.TreePrototypes - 1);
 
                         treeInstances.Add(new TreeInstance
                         {
-                            prototypeIndex = _treePrototypeIndex,
+                            prototypeIndex = prototypeIndex,
                             position = data.WorldToLocationPosition(position),
                             widthScale = scale,
                             heightScale = scale,
@@ -466,6 +473,22 @@ namespace Moths.Terrain.Modifiers
             return false;
         }
 
+        private static int ComputeIndicesHash(int[] indices)
+        {
+            if (indices == null) return 0;
+
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + indices.Length;
+                for (int i = 0; i < indices.Length; i++)
+                {
+                    hash = hash * 31 + indices[i];
+                }
+                return hash;
+            }
+        }
+
         private bool AreSettingsChanged()
         {
             return
@@ -478,7 +501,7 @@ namespace Moths.Terrain.Modifiers
                 _lastMidwayHeight != _midwayHeight ||
                 _lastMidwayLayerIndex != _midwayLayerIndex ||
                 _lastAddTrees != _addTrees ||
-                _lastTreePrototypeIndex != _treePrototypeIndex ||
+                _lastTreePrototypeIndicesHash != ComputeIndicesHash(_treePrototypeIndices) ||
                 _lastTreeSpacing != _treeSpacing ||
                 _lastTreeSpacingRandomization != _treeSpacingRandomization;
         }
