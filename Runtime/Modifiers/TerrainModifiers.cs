@@ -120,7 +120,7 @@ namespace Moths.Terrain.Modifiers
         [ContextMenu("Bake Runtime Data")]
         public void BakeRuntimeData()
         {
-            if (Application.isPlaying || _isProxy || GetActiveModifiersCount() == 0) return;
+            if (_isProxy || GetActiveModifiersCount() == 0) return;
 
             string sceneFolder = Path.GetDirectoryName(gameObject.scene.path);
             if (string.IsNullOrEmpty(sceneFolder))
