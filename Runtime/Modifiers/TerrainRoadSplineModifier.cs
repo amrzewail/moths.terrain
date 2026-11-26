@@ -202,7 +202,9 @@ namespace Moths.Terrain.Modifiers
 
                 if (distancesq < width * width)
                 {
-                    TerrainData.SetAlphamapLayerWeight(alphamapIndex, RoadLayer, 1f - math.saturate(distancesq / (width * width)));
+                    float weight = 1f - math.saturate(distancesq / (width * width));
+                    if (TerrainData.AlphamapIndexToLayerIndex(alphamapIndex) == MidwayLayer) weight = math.max(TerrainData.Alphamaps[alphamapIndex], weight);
+                    TerrainData.SetAlphamapLayerWeight(alphamapIndex, RoadLayer, weight);
                 }
 
                 width = MidwayWidth * random;
