@@ -23,6 +23,7 @@ namespace Moths.Terrain.Modifiers
         private Terrain Terrain => _terrain ? _terrain : (_terrain = GetComponent<Terrain>());
         private TerrainCollider TerrainCollider => _terrainCollider ? _terrainCollider : (_terrainCollider = GetComponent<TerrainCollider>());
 
+        [SerializeField] bool _bakeOnStart = false;
         [SerializeField] TerrainData _sourceTerrainData;
         [SerializeField, Attributes.ReadOnly] TerrainData _runtimeTerrainData;
 
@@ -75,6 +76,12 @@ namespace Moths.Terrain.Modifiers
         {
             if (Application.isPlaying)
             {
+#if UNITY_EDITOR
+                if (_bakeOnStart)
+                {
+                    BakeRuntimeData();
+                }
+#endif
                 SetTerrainData(_runtimeTerrainData);
             }
         }
