@@ -1,4 +1,3 @@
-using Codice.CM.Common;
 using System;
 using Unity.Burst;
 using Unity.Collections;
@@ -179,6 +178,11 @@ namespace Moths.Terrain.Modifiers
             public int MidwayLayer;
             public float MidwayWidth;
 
+            public bool AddTrack;
+            public int TrackLayer;
+            public float TrackWidth;
+            public float TrackWeightRandomization;
+
             [ReadOnly]
             public NativeArray<float3> NearestSplinePositions;
 
@@ -195,10 +199,10 @@ namespace Moths.Terrain.Modifiers
                 splinePosition.y = 0;
 
                 float distancesq = math.distancesq(worldPosition, splinePosition);
+                float rawRandom = NearestSplineRandomness[heightmapIndex];
+                float widthRandom = 1f + rawRandom * RoadWidthRandomization;
 
-                float random = (1f + NearestSplineRandomness[heightmapIndex] * RoadWidthRandomization);
-
-                float width = RoadWidth * random;
+                float width = RoadWidth * widthRandom;
 
                 if (distancesq < width * width)
                 {
@@ -207,13 +211,24 @@ namespace Moths.Terrain.Modifiers
                     TerrainData.SetAlphamapLayerWeight(alphamapIndex, RoadLayer, weight);
                 }
 
-                width = MidwayWidth * random;
+                width = MidwayWidth * widthRandom;
 
                 if (distancesq < width * width)
                 {
                     float weight = 1f - math.saturate(distancesq / (width * width));
                     if (TerrainData.AlphamapIndexToLayerIndex(alphamapIndex) == MidwayLayer) weight = math.max(TerrainData.Alphamaps[alphamapIndex], weight);
                     TerrainData.SetAlphamapLayerWeight(alphamapIndex, MidwayLayer, weight);
+                }
+
+                if (AddTrack && distancesq < TrackWidth * TrackWidth)
+                {
+                    float falloff = 1f - math.saturate(distancesq / (TrackWidth * TrackWidth));
+                    float random01 = 0.5f + 0.5f * rawRandom;
+                    float weightScale = math.lerp(1f - TrackWeightRandomization, 1f, random01);
+                    float weight = falloff * weightScale;
+
+                    if (TerrainData.AlphamapIndexToLayerIndex(alphamapIndex) == TrackLayer) weight = math.max(TerrainData.Alphamaps[alphamapIndex], weight);
+                    TerrainData.SetAlphamapLayerWeight(alphamapIndex, TrackLayer, weight);
                 }
             }
         }
@@ -235,6 +250,12 @@ namespace Moths.Terrain.Modifiers
         [SerializeField] float _midwayHeight = 0.125f;
         [SerializeField] int _midwayLayerIndex = 0;
 
+        [Header("Track")]
+        [SerializeField] bool _addTrack = false;
+        [SerializeField] int _trackLayerIndex = 0;
+        [SerializeField] float _trackWidth = 1f;
+        [SerializeField, Range(0f, 1f)] float _trackWeightRandomization = 0.3f;
+
         [Header("Trees")]
         [SerializeField] bool _addTrees = false;
         [SerializeField] int[] _treePrototypeIndices = new[] { 0 };
@@ -255,6 +276,10 @@ namespace Moths.Terrain.Modifiers
         private float _lastMidwayWidth;
         private float _lastMidwayHeight;
         private int _lastMidwayLayerIndex;
+        private bool _lastAddTrack;
+        private int _lastTrackLayerIndex;
+        private float _lastTrackWidth;
+        private float _lastTrackWeightRandomization;
 
         private bool _lastAddTrees;
         private int _lastTreePrototypeIndicesHash;
@@ -276,6 +301,11 @@ namespace Moths.Terrain.Modifiers
             _lastMidwayWidth = _midwayWidth;
             _lastMidwayHeight = _midwayHeight;
             _lastMidwayLayerIndex = _midwayLayerIndex;
+
+            _lastAddTrack = _addTrack;
+            _lastTrackLayerIndex = _trackLayerIndex;
+            _lastTrackWidth = _trackWidth;
+            _lastTrackWeightRandomization = _trackWeightRandomization;
 
             _lastAddTrees = _addTrees;
             _lastTreePrototypeIndicesHash = ComputeIndicesHash(_treePrototypeIndices);
@@ -358,6 +388,11 @@ namespace Moths.Terrain.Modifiers
 
                 MidwayWidth = _midwayWidth,
                 MidwayLayer = _midwayLayerIndex,
+
+                AddTrack = _addTrack,
+                TrackLayer = _trackLayerIndex,
+                TrackWidth = _trackWidth,
+                TrackWeightRandomization = _trackWeightRandomization,
             };
 
             handle = alphamapJob.Schedule(data.Alphamaps.Length, 32);
@@ -502,10 +537,15 @@ namespace Moths.Terrain.Modifiers
                 _lastMidwayWidth != _midwayWidth ||
                 _lastMidwayHeight != _midwayHeight ||
                 _lastMidwayLayerIndex != _midwayLayerIndex ||
+                _lastAddTrack != _addTrack ||
+                _lastTrackLayerIndex != _trackLayerIndex ||
+                _lastTrackWidth != _trackWidth ||
+                _lastTrackWeightRandomization != _trackWeightRandomization ||
                 _lastAddTrees != _addTrees ||
                 _lastTreePrototypeIndicesHash != ComputeIndicesHash(_treePrototypeIndices) ||
                 _lastTreeSpacing != _treeSpacing ||
                 _lastTreeSpacingRandomization != _treeSpacingRandomization;
+
         }
 
     }
